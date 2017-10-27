@@ -1,5 +1,12 @@
-FROM debian:stretch
-MAINTAINER Odoo S.A. <info@odoo.com>
+FROM python:3.6.3
+MAINTAINER Marc de Villeres <mpdevilleres@gmail.com>
+
+# REFERENCES
+# https://github.com/hibou-io/odoo-docker
+# https://github.com/odoo/docker
+
+# unfortunately python comes with group 107 already defined so I used www-data as group
+RUN useradd -m -d /var/lib/odoo -s /bin/false -u 104 -g 33 odoo
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN set -x; \
@@ -7,29 +14,51 @@ RUN set -x; \
         && apt-get install -y --no-install-recommends \
             ca-certificates \
             curl \
-            node-less \
-            python3-pip \
-            python3-setuptools \
-            python3-renderpm \
-            libssl1.0-dev \
-            xz-utils \
-        && curl -o wkhtmltox.tar.xz -SL https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz \
-        && echo '3f923f425d345940089e44c1466f6408b9619562 wkhtmltox.tar.xz' | sha1sum -c - \
-        && tar xvf wkhtmltox.tar.xz \
-        && cp wkhtmltox/lib/* /usr/local/lib/ \
-        && cp wkhtmltox/bin/* /usr/local/bin/ \
-        && cp -r wkhtmltox/share/man/man1 /usr/local/share/man/
+        && curl -o wkhtmltox.deb -SL http://nightly.odoo.com/extra/wkhtmltox-0.12.1.2_linux-jessie-amd64.deb \
+        && echo '40e8b906de658a2221b15e4e8cd82565a47d7ee8 wkhtmltox.deb' | sha1sum -c - \
+        && dpkg --force-depends -i wkhtmltox.deb \
+        && apt-get -y install -f --no-install-recommends \
+        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
+        && rm -rf /var/lib/apt/lists/* wkhtmltox.deb
+
+# support for Postgresql 9.6
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /etc/apt/sources.list.d/postgresql.list \
+        && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+        && apt-get update \
+        && apt-get upgrade -y postgresql-common \
+        && apt-get upgrade -y postgresql-client
+
+# install newer node and lessc (mostly for less compatibility)
+RUN set -x; \
+        apt-get install -y nodejs npm
+
+RUN npm install -g less \
+    && npm install -g less-plugin-clean-css \
+    && ln -s `which nodejs` /bin/node \
+    && ln -s `which lessc` /bin/lessc
+
+# remove python python-minimal python2.7 python2.7-minimal
+RUN apt-get purge -y python.*
 
 # Install Odoo
 ENV ODOO_VERSION 11.0
-ENV ODOO_RELEASE 20171013
+ENV ODOO_RELEASE 20171027
 RUN set -x; \
-        curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
-        && echo '596e01ef47fda076f086791a12eb360af42d9a14 odoo.deb' | sha1sum -c - \
-        && dpkg --force-depends -i odoo.deb \
-        && apt-get update \
-        && apt-get -y install -f --no-install-recommends \
-        && rm -rf /var/lib/apt/lists/* odoo.deb
+        apt-get install -y libsasl2-dev libldap2-dev libssl-dev gcc \
+        && curl -o odoo.tar.gz -SL https://nightly.odoo.com/${ODOO_VERSION}/nightly/src/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.tar.gz \
+        && tar xzf odoo.tar.gz \
+        && cd odoo-* \
+        && pip install -r ./requirements.txt \
+        && pip install . \
+        && cd .. && rm -rf ./odoo* \
+        && pip install --upgrade \
+            pandas \
+            openpyxl==2.3.5 \
+        && apt-get purge -y \
+            gcc \
+            libsasl2-dev \
+            libldap2-dev \
+            libssl-dev
 
 # Copy entrypoint script and Odoo configuration file
 COPY ./entrypoint.sh /
@@ -42,7 +71,7 @@ RUN mkdir -p /mnt/extra-addons \
 VOLUME ["/var/lib/odoo", "/mnt/extra-addons"]
 
 # Expose Odoo services
-EXPOSE 8069 8071
+EXPOSE 8069 8071 8072
 
 # Set the default config file
 ENV ODOO_RC /etc/odoo/odoo.conf
