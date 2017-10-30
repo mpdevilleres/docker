@@ -52,6 +52,7 @@ RUN set -x; \
         && pip install . \
         && cd .. && rm -rf ./odoo* \
         && pip install --upgrade \
+            ipython \
             pandas \
             openpyxl==2.3.5 \
         && apt-get purge -y \
