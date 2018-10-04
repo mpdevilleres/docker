@@ -1,4 +1,4 @@
-FROM python:3.6.3
+FROM python:3.6.6
 MAINTAINER Marc de Villeres <mpdevilleres@gmail.com>
 
 # REFERENCES
