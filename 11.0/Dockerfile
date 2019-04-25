@@ -54,7 +54,7 @@ RUN set -x; \
         && pip install --upgrade \
             ipython \
             pandas \
-            openpyxl==2.3.5 \
+            openpyxl==2.6.2 \
         && apt-get purge -y \
             gcc \
             libsasl2-dev \
