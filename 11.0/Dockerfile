@@ -1,4 +1,4 @@
-FROM python:3.6.3
+FROM python:3.6.8-jessie
 MAINTAINER Marc de Villeres <mpdevilleres@gmail.com>
 
 # REFERENCES
@@ -18,10 +18,10 @@ RUN set -x; \
         && echo '40e8b906de658a2221b15e4e8cd82565a47d7ee8 wkhtmltox.deb' | sha1sum -c - \
         && dpkg --force-depends -i wkhtmltox.deb \
         && apt-get -y install -f --no-install-recommends \
-        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
+        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false \
         && rm -rf /var/lib/apt/lists/* wkhtmltox.deb
 
-# support for Postgresql 9.6
+# support for Postgresql10
 RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /etc/apt/sources.list.d/postgresql.list \
         && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
         && apt-get update \
@@ -42,7 +42,7 @@ RUN apt-get purge -y python.*
 
 # Install Odoo
 ENV ODOO_VERSION 11.0
-ENV ODOO_RELEASE 20190310
+ENV ODOO_RELEASE 20190427
 RUN set -x; \
         apt-get install -y libsasl2-dev libldap2-dev libssl-dev gcc \
         && curl -o odoo.tar.gz -SL https://nightly.odoo.com/${ODOO_VERSION}/nightly/src/odoo_${ODOO_VERSION}.${ODOO_RELEASE}.tar.gz \
