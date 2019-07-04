@@ -58,6 +58,7 @@ RUN set -x; \
         && pip install -r ./requirements.txt \
         && pip install . \
         && cd .. && rm -rf ./odoo* \
+        && pip install libsass==0.12.3 \
         && pip install --upgrade \
             cryptography \
             watchdog \
