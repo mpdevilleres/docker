@@ -39,11 +39,9 @@ RUN echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main 9.6" > /
 
 # install newer node and lessc (mostly for less compatibility)
 RUN set -x; \
-        curl -sL https://deb.nodesource.com/setup_10.x | bash - \
-        && apt-get install -y nodejs \
-        && npm install -g less \
-        ;
- 
+        apt-get install -y --no-install-recommends \
+        node-less
+
 # python python-minimal python2.7 python2.7-minimal
 RUN apt-get purge -y python.*
 
